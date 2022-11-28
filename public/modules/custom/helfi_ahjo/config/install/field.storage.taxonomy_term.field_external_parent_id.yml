@@ -1,0 +1,20 @@
+uuid: d89e9f91-ea83-4a19-b589-147b0dc12a95
+langcode: en
+status: true
+dependencies:
+  module:
+    - taxonomy
+    - text
+id: taxonomy_term.field_external_parent_id
+field_name: field_external_parent_id
+entity_type: taxonomy_term
+type: text
+settings:
+  max_length: 255
+module: text
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

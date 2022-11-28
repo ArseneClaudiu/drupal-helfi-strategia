@@ -1,0 +1,21 @@
+uuid: 8abdcdeb-c3f2-4489-8917-77ae896cdb2e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_external_parent_id
+    - taxonomy.vocabulary.sote_section
+  module:
+    - text
+id: taxonomy_term.sote_section.field_external_parent_id
+field_name: field_external_parent_id
+entity_type: taxonomy_term
+bundle: sote_section
+label: 'External Parent ID'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

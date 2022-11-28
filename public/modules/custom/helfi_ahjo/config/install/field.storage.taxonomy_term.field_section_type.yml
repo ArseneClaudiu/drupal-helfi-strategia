@@ -1,0 +1,20 @@
+uuid: 741ea69f-bb4d-4268-8557-3f2796707d6e
+langcode: en
+status: true
+dependencies:
+  module:
+    - taxonomy
+    - text
+id: taxonomy_term.field_section_type
+field_name: field_section_type
+entity_type: taxonomy_term
+type: text
+settings:
+  max_length: 255
+module: text
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

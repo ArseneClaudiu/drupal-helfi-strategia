@@ -1,0 +1,21 @@
+uuid: 1eaeb19d-ba3e-478f-b3df-9908d021b0f6
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_section_type_id
+    - taxonomy.vocabulary.sote_section
+  module:
+    - text
+id: taxonomy_term.sote_section.field_section_type_id
+field_name: field_section_type_id
+entity_type: taxonomy_term
+bundle: sote_section
+label: 'Section Type ID'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string
