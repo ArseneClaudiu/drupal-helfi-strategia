@@ -20,11 +20,16 @@ interface AhjoServiceInterface {
   /**
    * Get data from api and add it as taxonomy terms tree.
    *
+   * @param int $orgId
+   *   Organisation id if its needed.
+   * @param int $maxDepth
+   *   Max depth
+   *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  public function fetchDataFromRemote();
+  public function fetchDataFromRemote($orgId, $maxDepth);
 
   /**
    * Add to cron queue.

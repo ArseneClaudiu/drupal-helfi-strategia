@@ -94,9 +94,9 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * {@inheritDoc}
    */
-  public function fetchDataFromRemote(): string {
+  public function fetchDataFromRemote($orgId = 00001, $maxDepth = 9999): string {
     $config = self::getConfig();
-    $url = sprintf("%s/fi/ahjo-proxy/org-chart/00001/9999?api-key=%s", $config->get('base_url'), $config->get('api_key'));
+    $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
 
     $response = $this->guzzleClient->request('GET', $url);
 
@@ -106,8 +106,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * Call createTaxonomyTermsTree() and syncTaxonomyTree functions.
    */
-  public function insertSyncData() {
-    $this->createTaxonomyTermsTree($this->fetchDataFromRemote());
+  public function insertSyncData($orgId = 00001, $maxDepth = 9999) {
+    $this->createTaxonomyTermsTree($this->fetchDataFromRemote($orgId, $maxDepth));
     $this->syncTaxonomyTermsTree();
   }
 

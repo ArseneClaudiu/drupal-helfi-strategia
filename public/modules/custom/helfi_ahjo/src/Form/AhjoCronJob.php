@@ -164,6 +164,22 @@ class AhjoCronJob extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
+    $form['org_id'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Organisation ID (Start)'),
+      '#default_value' => $config->get('org_id') ?? 00001,
+      '#description' => $this->t('example: 00001'),
+      '#required' => TRUE,
+    ];
+
+    $form['max_depth'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Max Depth'),
+      '#default_value' => $config->get('max_depth') ?? 9999,
+      '#description' => $this->t('example: 9999'),
+      '#required' => TRUE,
+    ];
+
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
       '#type' => 'submit',
@@ -186,6 +202,8 @@ class AhjoCronJob extends ConfigFormBase {
     $this->messenger->addStatus('Ahjo Cron Settings saved!');
     $this->config('helfi_ahjo.config')
       ->set('sync_interval', $form_state->getValue('sync_interval'))
+      ->set('org_id', $form_state->getValue('org_id'))
+      ->set('max_depth', $form_state->getValue('max_depth'))
       ->save();
   }
 
@@ -198,7 +216,7 @@ class AhjoCronJob extends ConfigFormBase {
    *   The current state of the form.
    */
   public function runCronNow(array &$form, FormStateInterface $form_state): void {
-    $jsonFile = Json::decode(\Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote());
+    $jsonFile = Json::decode(\Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote($form_state->getValue('org_id'), $form_state->getValue('max_depth')));
 
     $queue = $this->queue->get('sote_section_update');
     $queue->createQueue();

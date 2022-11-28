@@ -110,6 +110,22 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
+    $form['org_id'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Organisation ID (Start)'),
+      '#default_value' => 00001,
+      '#description' => $this->t('example: 00001'),
+      '#required' => TRUE,
+    ];
+
+    $form['max_depth'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Max Depth'),
+      '#default_value' => 9999,
+      '#description' => $this->t('example: 9999'),
+      '#required' => TRUE,
+    ];
+
     $form['organigram_max_depth'] = [
       '#type' => 'number',
       '#title' => $this->t('Organigram Max Depth'),
@@ -187,7 +203,7 @@ class AhjoConfigForm extends ConfigFormBase {
    * Import data and sync it.
    */
   public function importSyncData(array &$form, FormStateInterface $form_state) {
-    $this->ahjoService->insertSyncData();
+    $this->ahjoService->insertSyncData($form_state->getValue('org_id'), $form_state->getValue('max_depth'));
     $this->messenger->addStatus('Sections imported! and synchronized!');
   }
 
