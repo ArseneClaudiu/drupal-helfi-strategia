@@ -1,17 +1,18 @@
-uuid: c19c0177-76cc-4bf9-9cbc-2a920a16ed56
+uuid: 2dbfdf0f-943f-4194-848e-bfbdd7f94ed7
 langcode: en
 status: true
 dependencies:
   module:
     - taxonomy
-    - text
-id: taxonomy_term.field_section_type_id
-field_name: field_section_type_id
+id: taxonomy_term.field_type_id
+field_name: field_type_id
 entity_type: taxonomy_term
-type: text
+type: string
 settings:
   max_length: 255
-module: text
+  case_sensitive: false
+  is_ascii: false
+module: core
 locked: false
 cardinality: 1
 translatable: true

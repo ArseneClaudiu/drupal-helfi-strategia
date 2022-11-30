@@ -10,6 +10,7 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\helfi_ahjo\Services\AhjoService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Component\Serialization\Json;
 
 /**
  * Gredi DAM module configuration form.
@@ -94,6 +95,10 @@ class AhjoConfigForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $config = $this->config('helfi_ahjo.config');
 
+    // $url = sprintf("%s/fi/ahjo-proxy/org-chart/00001/9999?api-key=%s", $config->get('base_url'), $config->get('api_key'));
+
+    // $response = \Drupal::httpClient()->request('GET', $url);
+
     $form['helfi_ahjo_base_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Ahjo Base URL'),
@@ -145,6 +150,13 @@ class AhjoConfigForm extends ConfigFormBase {
       '#value' => $this->t('Import Data and Sync'),
       '#button_type' => 'primary',
       '#submit' => ['::importSyncData'],
+    ];
+
+    $form['actions']['sync'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Sync'),
+      '#button_type' => 'primary',
+      '#submit' => ['::syncData'],
     ];
 
     return $form;
@@ -205,6 +217,15 @@ class AhjoConfigForm extends ConfigFormBase {
   public function importSyncData(array &$form, FormStateInterface $form_state) {
     $this->ahjoService->insertSyncData($form_state->getValue('org_id'), $form_state->getValue('max_depth'));
     $this->messenger->addStatus('Sections imported! and synchronized!');
+  }
+
+  public function syncData(array &$form, FormStateInterface $form_state) {
+    $terms = \Drupal::entityTypeManager()
+      ->getStorage('taxonomy_term')
+      ->loadByProperties(['vid' => 'sote_section']);
+    foreach ($terms as $item) {
+      $item->delete();
+    }
   }
 
 }

@@ -96,6 +96,13 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    */
   public function fetchDataFromRemote($orgId = 00001, $maxDepth = 9999): string {
     $config = self::getConfig();
+    if (strlen($orgId) < 5) {
+      $orgId = sprintf('%05d', $orgId);
+    }
+
+    if (strlen($maxDepth) < 4) {
+      $maxDepth = sprintf('%04d', $maxDepth);
+    }
     $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
 
     $response = $this->guzzleClient->request('GET', $url);
@@ -107,7 +114,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    * Call createTaxonomyTermsTree() and syncTaxonomyTree functions.
    */
   public function insertSyncData($orgId = 00001, $maxDepth = 9999) {
-    $this->createTaxonomyTermsTree($this->fetchDataFromRemote($orgId, $maxDepth));
+    $this->createTaxonomyTermsBatch($this->fetchDataFromRemote($orgId, $maxDepth));
     $this->syncTaxonomyTermsTree();
   }
 
@@ -165,6 +172,42 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     return $hierarchy;
   }
 
+  public function setAllInformations($data = [], &$append = [], $parentId = 0) {
+    foreach ($data as $content) {
+      $content['parentId'] = $parentId;
+      $append[] = $content;
+
+      if (isset($content['OrganizationLevelBelow'])) {
+        $this->setAllInformations($content['OrganizationLevelBelow'], $append, $content['ID']);
+      }
+    }
+
+    return $append;
+  }
+
+  public function createTaxonomyTermsBatch($data, array &$hierarchy = [], $parentId = 0) {
+    if (!is_array($data)) {
+      $data = Json::decode($data);
+    }
+
+    $operations = [];
+
+    foreach ($this->setAllInformations($data) as $content) {
+      $operations[] = ['create_tax_terms_batch', [$content]];
+    }
+    $batch = [
+      'operations' => $operations,
+      'finished' => 'create_tax_terms_batch_finished',
+      'title' => 'Performing an operation',
+      'init_message' => 'Please wait',
+      'progress_message' => 'Completed @current from @total',
+      'error_message' => 'An error occurred',
+    ];
+
+    batch_set($batch);
+
+  }
+
   /**
    * {@inheritDoc}
    */
@@ -211,8 +254,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * {@inheritDoc}
    */
-  public function showDataAsTree() {
-    return $this->taxonomyUtils->load('sote_section');
+  public function showDataAsTree($excludedByTypeId = []) {
+    return $this->taxonomyUtils->load('sote_section', $excludedByTypeId);
   }
 
 }

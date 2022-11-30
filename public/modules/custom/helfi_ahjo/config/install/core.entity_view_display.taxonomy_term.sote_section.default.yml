@@ -1,0 +1,61 @@
+uuid: edd29f1b-9306-41ce-8fc0-eca9906bbad9
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.sote_section.field_external_id
+    - field.field.taxonomy_term.sote_section.field_external_parent_id
+    - field.field.taxonomy_term.sote_section.field_section_type
+    - field.field.taxonomy_term.sote_section.field_typeid
+    - taxonomy.vocabulary.sote_section
+  module:
+    - text
+_core:
+  default_config_hash: HjiLqpLwxYfWrXc3wFA3hmeEs7N622uZJ0XVk8XLx2c
+id: taxonomy_term.sote_section.default
+targetEntityType: taxonomy_term
+bundle: sote_section
+mode: default
+content:
+  description:
+    type: text_default
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+  field_external_id:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_external_parent_id:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_section_type:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 4
+    region: content
+  field_typeid:
+    type: number_integer
+    label: above
+    settings:
+      thousand_separator: ''
+      prefix_suffix: true
+    third_party_settings: {  }
+    weight: 1
+    region: content
+hidden:
+  langcode: true

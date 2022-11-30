@@ -1,17 +1,18 @@
-uuid: d89e9f91-ea83-4a19-b589-147b0dc12a95
+uuid: a1329405-b8ad-45c2-b408-31aca2cdb6d0
 langcode: en
 status: true
 dependencies:
   module:
     - taxonomy
-    - text
 id: taxonomy_term.field_external_parent_id
 field_name: field_external_parent_id
 entity_type: taxonomy_term
-type: text
+type: string
 settings:
   max_length: 255
-module: text
+  case_sensitive: false
+  is_ascii: false
+module: core
 locked: false
 cardinality: 1
 translatable: true

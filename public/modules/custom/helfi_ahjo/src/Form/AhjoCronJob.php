@@ -145,6 +145,7 @@ class AhjoCronJob extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $config = $this->config('helfi_ahjo.config');
+
     $form['sync_interval'] = [
       '#type' => 'select',
       '#title' => $this->t('Ahjo Sections Update Interval'),

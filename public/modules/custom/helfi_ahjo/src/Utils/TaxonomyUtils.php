@@ -30,14 +30,20 @@ class TaxonomyUtils {
    *
    * @param string $vocabulary
    *   Machine name.
+   * @param array $excludedByTypeId
+   *   Exclude by type id.
    *
    * @return array
    *   Return array of vocabulary tree.
    */
-  public function load(string $vocabulary): array {
+  public function load(string $vocabulary, array $excludedByTypeId): array {
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')->loadTree($vocabulary);
     $tree = [];
     foreach ($terms as $tree_object) {
+      $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tree_object->tid);
+      if (in_array($term->field_type_id, $excludedByTypeId)) {
+        continue;
+      }
       $this->buildTree($tree, $tree_object, $vocabulary, 0);
     }
 

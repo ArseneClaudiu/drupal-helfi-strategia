@@ -20,7 +20,7 @@ interface AhjoServiceInterface {
   /**
    * Get data from api and add it as taxonomy terms tree.
    *
-   * @param int $orgId
+   * @param string $orgId
    *   Organisation id if its needed.
    * @param int $maxDepth
    *   Max depth
@@ -51,9 +51,12 @@ interface AhjoServiceInterface {
   /**
    * Create taxonomy tree.
    *
+   * @param array|null $excludedByTypeId
+   *   Exclude by type id.
+   *
    * @return array
    *   Return taxonomy tree.
    */
-  public function showDataAsTree();
+  public function showDataAsTree($excludedByTypeId);
 
 }

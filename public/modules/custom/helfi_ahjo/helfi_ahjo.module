@@ -2,44 +2,8 @@
 use Drupal\Core\Entity\Display\EntityFormDisplayInterface;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Form\FormStateInterface;
-
-/**
- * Implements hook_entity_form_display_alter().
- */
-function helfi_ahjo_entity_form_display_alter(EntityFormDisplayInterface $form_display, array $context) {
-  if ($context['entity_type'] == 'taxonomy_term' && $context['form_mode'] == 'default') {
-    $form_display
-      ->setComponent('field_external_id', [
-        'region' => 'content',
-      ])
-      ->setComponent('field_external_parent_id', [
-        'region' => 'content',
-      ])
-      ->setComponent('field_section_type', [
-        'region' => 'content',
-      ])
-      ->setComponent('field_section_type_id', [
-        'region' => 'content',
-      ])
-      ->setComponent('field_o_position', [
-        'region' => 'content',
-      ]);
-  }
-}
-
-/**
- * Implements hook_form_alter().
- */
-function helfi_ahjo_form_alter(&$form, FormStateInterface $form_state, $form_id)
-{
-  if ($form['#form_id'] == 'taxonomy_term_sote_section_form') {
-    $form['field_external_id']['widget'][0]['#type'] = 'textfield';
-    $form['field_external_parent_id']['widget'][0]['#type'] = 'textfield';
-    $form['field_section_type']['widget'][0]['#type'] = 'textfield';
-    $form['field_section_type_id']['widget'][0]['#type'] = 'textfield';
-  }
-
-}
+use Drupal\taxonomy\Entity\Term;
+use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_theme().
@@ -47,7 +11,7 @@ function helfi_ahjo_form_alter(&$form, FormStateInterface $form_state, $form_id)
 function helfi_ahjo_theme($existing, $type, $theme, $path) {
   return [
     'hierarchical_taxonomy_tree' => [
-      'variables' => [
+      'builds' => [
         'menu_tree' => [],
         'route_tid' => NULL,
         'vocabulary' => NULL,
@@ -57,7 +21,7 @@ function helfi_ahjo_theme($existing, $type, $theme, $path) {
       ],
     ],
     'organigram_container' => [
-      'variables' => [
+      'builds' => [
         'menu_tree' => [],
       ],
     ],
@@ -103,4 +67,56 @@ function helfi_ahjo_cron() {
   $logger->info('Total items in the queue: @count.', ['@count' => $count]);
   \Drupal::service('helfi_ahjo.ahjo_service')->syncTaxonomyTermsTree();
   \Drupal::state()->set('helfi_ahjo.last_run', $request_time);
+}
+
+
+function create_tax_terms_batch($data, &$context) {
+  $message = 'Creating taxonomy terms...';
+
+  $hierarchy[] = [
+    'id' => $data['ID'],
+    'parent' => $data['parentId'] ?? 0,
+    'title' => $data['Name'],
+  ];
+
+  $loadByExternalId = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
+    'vid' => 'sote_section',
+    'field_external_id' => $data['ID'],
+  ]);
+
+  if (count($loadByExternalId) == 0) {
+    $term = Term::create([
+      'name' => $data['Name'],
+      'vid' => 'sote_section',
+      'field_external_id' => $data['ID'],
+      'field_external_parent_id' => $data['parentId'],
+      'field_section_type' => $data['Type'],
+      'field_type_id' => $data['TypeId'],
+    ]);
+    $term->save();
+  }
+  else {
+    $term = array_values($loadByExternalId);
+
+    $term[0]->set('field_external_id', $data['ID']);
+    $term[0]->set('field_external_parent_id', $data['parentId']);
+    $term[0]->set('field_section_type', $data['Type']);
+    $term[0]->set('field_type_id', $data['TypeId']);
+    $term[0]->save();
+  }
+
+  $context['message'] = $message;
+}
+
+function create_tax_terms_batch_finished($success, $results, $operations) {
+  if ($success) {
+    $message = t('Terms processed.');
+
+  }
+  else {
+    $message = t('Finished with an error.');
+  }
+  \Drupal::service('helfi_ahjo.ahjo_service')->syncTaxonomyTermsTree();
+  \Drupal::messenger()->addStatus($message);
+
 }

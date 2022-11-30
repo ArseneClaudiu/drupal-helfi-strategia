@@ -1,6 +1,9 @@
 uuid: 645c8ae1-bf91-4150-a56e-1b61ac98e05d
 langcode: en
 status: true
+dependencies: {  }
+_core:
+  default_config_hash: oGNOi9l8vCRJblJPLnhOvnbAps0EkRvM5m243wJqEm0
 name: 'Sote Section'
 vid: sote_section
 description: ''
