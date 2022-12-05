@@ -11,6 +11,7 @@ use Drupal\helfi_ahjo\AhjoServiceInterface;
 use Drupal\helfi_ahjo\Utils\TaxonomyUtils;
 use Drupal\taxonomy\Entity\Term;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -103,11 +104,21 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     if (strlen($maxDepth) < 4) {
       $maxDepth = sprintf('%04d', $maxDepth);
     }
-    $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
 
-    $response = $this->guzzleClient->request('GET', $url);
+    try {
+      $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
 
-    return $response->getBody()->getContents();
+      $response = $this->guzzleClient->request('GET', $url);
+
+      return $response->getBody()->getContents();
+    }
+    catch (ClientException $e) {
+      $statusCode = $e->getResponse()->getStatusCode();
+      if ($statusCode === 401) {
+        throw new \Exception($statusCode);
+      }
+    }
+
   }
 
   /**
@@ -118,60 +129,16 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     $this->syncTaxonomyTermsTree();
   }
 
+
   /**
-   * Create tree in taxonomy.
+   * @param array $data
+   * @param array $append
+   * @param int $parentId
    *
-   * @param array|string $data
-   *   Data param.
-   * @param array $hierarchy
-   *   Hierarchy param.
-   * @param string|null $parentId
-   *   Parent id param.
+   * Recursive set all information from ahjo api.
    *
-   * @return array
-   *   Retrun array or mixed value.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @return array|mixed
    */
-  private function createTaxonomyTermsTree($data, array &$hierarchy = [], $parentId = NULL): array {
-    if (!is_array($data)) {
-      $data = Json::decode($data);
-    }
-
-    foreach ($data as $content) {
-
-      $hierarchy[] = [
-        'id' => $content['ID'],
-        'parent' => $parentId ?? 0,
-        'title' => $content['Name'],
-      ];
-
-      $loadByExternalId = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
-        'vid' => 'sote_section',
-        'field_external_id' => $content['ID'],
-      ]);
-
-      if (count($loadByExternalId) == 0) {
-        $term = Term::create([
-          'name' => $content['Name'],
-          'vid' => 'sote_section',
-          'field_external_id' => $content['ID'],
-          'field_external_parent_id' => $parentId ?? 0,
-          'field_section_type' => $content['Type'],
-          'field_section_type_id' => $content['TypeId'],
-        ]);
-        $term->save();
-      }
-      if (isset($content['OrganizationLevelBelow'])) {
-        $this->createTaxonomyTermsTree($content['OrganizationLevelBelow'], $hierarchy, $content['ID']);
-      }
-    }
-
-    return $hierarchy;
-  }
-
   public function setAllInformations($data = [], &$append = [], $parentId = 0) {
     foreach ($data as $content) {
       $content['parentId'] = $parentId;
