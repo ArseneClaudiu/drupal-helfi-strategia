@@ -113,10 +113,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
       return $response->getBody()->getContents();
     }
     catch (ClientException $e) {
-      $statusCode = $e->getResponse()->getStatusCode();
-      if ($statusCode === 401) {
-        throw new \Exception($statusCode);
-      }
+      throw new \Exception($e->getResponse()->getStatusCode());
     }
 
   }
