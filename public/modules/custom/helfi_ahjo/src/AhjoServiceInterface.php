@@ -46,7 +46,7 @@ interface AhjoServiceInterface {
   /**
    * Sync sote section taxonomy tree.
    */
-  public function syncTaxonomyTermsTree();
+  public function syncTaxonomyTermsChilds();
 
   /**
    * Create taxonomy tree.

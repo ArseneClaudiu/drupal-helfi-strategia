@@ -119,15 +119,6 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   }
 
   /**
-   * Call createTaxonomyTermsTree() and syncTaxonomyTree functions.
-   */
-  public function insertSyncData($orgId = 00001, $maxDepth = 9999) {
-    $this->createTaxonomyTermsBatch($this->fetchDataFromRemote($orgId, $maxDepth));
-    $this->syncTaxonomyTermsTree();
-  }
-
-
-  /**
    * @param array $data
    * @param array $append
    * @param int $parentId
@@ -136,27 +127,27 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    *
    * @return array|mixed
    */
-  public function setAllInformations($data = [], &$append = [], $parentId = 0) {
+  public function setInformations($data = [], &$append = [], $parentId = 0) {
     foreach ($data as $content) {
       $content['parentId'] = $parentId;
       $append[] = $content;
 
       if (isset($content['OrganizationLevelBelow'])) {
-        $this->setAllInformations($content['OrganizationLevelBelow'], $append, $content['ID']);
+        $this->setInformations($content['OrganizationLevelBelow'], $append, $content['ID']);
       }
     }
 
     return $append;
   }
 
-  public function createTaxonomyTermsBatch($data, array &$hierarchy = [], $parentId = 0) {
+  public function createTaxonomyBatch($data, array &$hierarchy = [], $parentId = 0) {
     if (!is_array($data)) {
       $data = Json::decode($data);
     }
 
     $operations = [];
 
-    foreach ($this->setAllInformations($data) as $content) {
+    foreach ($this->setInformations($data) as $content) {
       $operations[] = ['create_tax_terms_batch', [$content]];
     }
     $batch = [
@@ -188,13 +179,13 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
         $this->addToCron($section['OrganizationLevelBelow'], $queue, $section['ID']);
       }
     }
-    $this->syncTaxonomyTermsTree();
+    $this->syncTaxonomyTermsChilds();
   }
 
   /**
    * {@inheritDoc}
    */
-  public function syncTaxonomyTermsTree() {
+  public function syncTaxonomyTermsChilds() {
     $terms = $this->entityTypeManager
       ->getStorage('taxonomy_term')
       ->loadByProperties(['vid' => 'sote_section']);

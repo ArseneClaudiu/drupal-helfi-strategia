@@ -215,7 +215,12 @@ class AhjoConfigForm extends ConfigFormBase {
    * Import data and sync it.
    */
   public function importSyncData(array &$form, FormStateInterface $form_state) {
-    $this->ahjoService->insertSyncData($form_state->getValue('org_id'), $form_state->getValue('max_depth'));
+    $this->ahjoService->createTaxonomyBatch(
+      $this->ahjoService->fetchDataFromRemote($form_state->getValue('org_id'), $form_state->getValue('max_depth'))
+    );
+
+    $this->ahjoService->syncTaxonomyTermsChilds();
+
     $this->messenger->addStatus('Sections imported! and synchronized!');
   }
 

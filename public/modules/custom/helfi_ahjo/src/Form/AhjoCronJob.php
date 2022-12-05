@@ -232,7 +232,7 @@ class AhjoCronJob extends ConfigFormBase {
     $this->state->set('helfi_ahjo.last_run', $request_time);
     $cron->run();
 
-    $this->ahjoService->syncTaxonomyTermsTree();
+    $this->ahjoService->syncTaxonomyTermsChilds();
 
     $this->messenger->addStatus('Cron job runned successfuly!');
   }
