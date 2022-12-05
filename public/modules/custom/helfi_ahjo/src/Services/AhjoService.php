@@ -254,8 +254,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * {@inheritDoc}
    */
-  public function showDataAsTree($excludedByTypeId = []) {
-    return $this->taxonomyUtils->load('sote_section', $excludedByTypeId);
+  public function showDataAsTree($excludedByTypeId = [], $organization = 0, $maxDepth = 0) {
+    return $this->taxonomyUtils->load('sote_section', $excludedByTypeId, $organization, $maxDepth);
   }
 
 }

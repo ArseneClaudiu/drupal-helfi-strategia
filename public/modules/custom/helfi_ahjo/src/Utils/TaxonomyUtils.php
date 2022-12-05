@@ -32,12 +32,17 @@ class TaxonomyUtils {
    *   Machine name.
    * @param array $excludedByTypeId
    *   Exclude by type id.
+   * @param string $organization
+   *   Organization ID.
+   * @param string $maxDepth
+   *   Max depth.
    *
    * @return array
    *   Return array of vocabulary tree.
    */
-  public function load(string $vocabulary, array $excludedByTypeId): array {
-    $terms = $this->entityTypeManager->getStorage('taxonomy_term')->loadTree($vocabulary);
+  public function load(string $vocabulary, array $excludedByTypeId, $organization = 0, $maxDepth = 0): array {
+    $terms = $this->entityTypeManager->getStorage('taxonomy_term')->loadTree($vocabulary, $organization, $maxDepth);
+
     $tree = [];
     foreach ($terms as $tree_object) {
       $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tree_object->tid);
