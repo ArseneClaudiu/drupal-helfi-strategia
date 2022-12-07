@@ -139,7 +139,15 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     return $append;
   }
 
-  public function createTaxonomyBatch($data, array &$hierarchy = [], $parentId = 0) {
+  /**
+   * Create batch operations for taxonomy sote_section.
+   *
+   * @param array $data
+   *   Data for batch.
+   *
+   * @return void
+   */
+  public function createTaxonomyBatch($data) {
     if (!is_array($data)) {
       $data = Json::decode($data);
     }
