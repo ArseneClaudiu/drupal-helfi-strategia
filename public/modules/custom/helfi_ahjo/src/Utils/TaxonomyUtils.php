@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\helfi_ahjo\Utils;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;

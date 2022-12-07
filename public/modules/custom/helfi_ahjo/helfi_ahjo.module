@@ -1,9 +1,6 @@
 <?php
-use Drupal\Core\Entity\Display\EntityFormDisplayInterface;
 use Drupal\Component\Serialization\Json;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\taxonomy\Entity\Term;
-use Drupal\Core\Entity\EntityInterface;
 
 /**
  * Implements hook_theme().

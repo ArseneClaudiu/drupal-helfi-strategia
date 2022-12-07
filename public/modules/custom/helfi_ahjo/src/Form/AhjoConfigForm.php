@@ -10,7 +10,6 @@ use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\helfi_ahjo\Services\AhjoService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\Component\Serialization\Json;
 
 /**
  * Gredi DAM module configuration form.
