@@ -27,36 +27,6 @@ class TaxonomyUtils {
   }
 
   /**
-   * Loads the tree of a vocabulary.
-   *
-   * @param string $vocabulary
-   *   Machine name.
-   * @param array $excludedByTypeId
-   *   Exclude by type id.
-   * @param string $organization
-   *   Organization ID.
-   * @param string $maxDepth
-   *   Max depth.
-   *
-   * @return array
-   *   Return array of vocabulary tree.
-   */
-  public function load(string $vocabulary, array $excludedByTypeId, $organization = 0, $maxDepth = 0): array {
-    $terms = $this->entityTypeManager->getStorage('taxonomy_term')->loadTree($vocabulary, $organization, $maxDepth);
-
-    $tree = [];
-    foreach ($terms as $tree_object) {
-      $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tree_object->tid);
-      if (in_array($term->field_type_id, $excludedByTypeId)) {
-        continue;
-      }
-      $this->buildTree($tree, $tree_object, $vocabulary, 0);
-    }
-
-    return $tree;
-  }
-
-  /**
    * Populates a tree array given a taxonomy term tree object.
    *
    * @param array $tree
@@ -70,7 +40,7 @@ class TaxonomyUtils {
    * @param int $depth
    *   Depth for tree.
    */
-  protected function buildTree(array &$tree, object $object, string $vocabulary, int $key = 0, int $depth = 0) {
+  public function buildTree(array &$tree, object $object, string $vocabulary, int $key = 0, int $depth = 0) {
     if ($object->depth != 0) {
       return;
     }

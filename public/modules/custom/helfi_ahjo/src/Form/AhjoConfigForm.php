@@ -138,6 +138,41 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
+    $form['sync_interval'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Ahjo Sections Update Interval'),
+      '#options' => [
+        '-1' => $this->t('Every cron run'),
+        '3600' => $this->t('Every hour'),
+        '7200' => $this->t('Every 2 hours'),
+        '10800' => $this->t('Every 3 hours'),
+        '14400' => $this->t('Every 4 hours'),
+        '21600' => $this->t('Every 6 hours'),
+        '28800' => $this->t('Every 8 hours'),
+        '43200' => $this->t('Every 12 hours'),
+        '86400' => $this->t('Every 24 hours'),
+      ],
+      '#default_value' => empty($config->get('sync_interval')) ? 86400 : $config->get('sync_interval'),
+      '#description' => $this->t('How often should Ahjo Sections be synced with AhjoProxy?'),
+      '#required' => TRUE,
+    ];
+
+    $form['org_id'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Organisation ID (Start)'),
+      '#default_value' => $config->get('org_id') ?? 00001,
+      '#description' => $this->t('example: 00001'),
+      '#required' => TRUE,
+    ];
+
+    $form['max_depth'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Max Depth'),
+      '#default_value' => $config->get('max_depth') ?? 9999,
+      '#description' => $this->t('example: 9999'),
+      '#required' => TRUE,
+    ];
+
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
       '#type' => 'submit',
@@ -151,11 +186,11 @@ class AhjoConfigForm extends ConfigFormBase {
       '#submit' => ['::importSyncData'],
     ];
 
-    $form['actions']['sync'] = [
+    $form['actions']['deleteAllData'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Sync'),
+      '#value' => $this->t('Delete all imported data'),
       '#button_type' => 'primary',
-      '#submit' => ['::syncData'],
+      '#submit' => ['::deleteAllData'],
     ];
 
     return $form;
@@ -205,6 +240,10 @@ class AhjoConfigForm extends ConfigFormBase {
       ->set('base_url', $form_state->getValue('helfi_ahjo_base_url'))
       ->set('api_key', $form_state->getValue('helfi_ahjo_api_key'))
       ->set('organigram_max_depth', $form_state->getValue('organigram_max_depth'))
+      ->set('sync_interval', $form_state->getValue('sync_interval'))
+      ->set('org_id', $form_state->getValue('org_id'))
+      ->set('max_depth', $form_state->getValue('max_depth'))
+
       ->save();
     $this->messenger->addStatus('Settings are updated!');
 
@@ -220,10 +259,13 @@ class AhjoConfigForm extends ConfigFormBase {
 
     $this->ahjoService->syncTaxonomyTermsChilds();
 
-    $this->messenger->addStatus('Sections imported! and synchronized!');
+    $this->messenger->addStatus('Sections imported and synchronized!');
   }
 
-  public function syncData(array &$form, FormStateInterface $form_state) {
+  /**
+   * Delete all imported data from sote section taxonomy.
+   */
+  public function deleteAllData(array &$form, FormStateInterface $form_state) {
     $terms = \Drupal::entityTypeManager()
       ->getStorage('taxonomy_term')
       ->loadByProperties(['vid' => 'sote_section']);

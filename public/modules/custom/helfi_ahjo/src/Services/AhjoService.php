@@ -118,25 +118,25 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   }
 
   /**
-   * @param array $data
-   * @param array $append
+   * @param array $childData
+   * @param array $operations
    * @param int $parentId
    *
    * Recursive set all information from ahjo api.
    *
    * @return array|mixed
    */
-  public function setInformations($data = [], &$append = [], $parentId = 0) {
-    foreach ($data as $content) {
+  public function setAllBatchOperations($childData = [], &$operations = [], $parentId = 0) {
+    foreach ($childData as $content) {
       $content['parentId'] = $parentId;
-      $append[] = $content;
+      $operations[] = ['create_tax_terms_batch', [$content]];
 
       if (isset($content['OrganizationLevelBelow'])) {
-        $this->setInformations($content['OrganizationLevelBelow'], $append, $content['ID']);
+        $this->setAllBatchOperations($content['OrganizationLevelBelow'], $operations, $content['ID']);
       }
     }
 
-    return $append;
+    return $operations;
   }
 
   /**
@@ -154,9 +154,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
 
     $operations = [];
 
-    foreach ($this->setInformations($data) as $content) {
-      $operations[] = ['create_tax_terms_batch', [$content]];
-    }
+    $operations[] = $this->setAllBatchOperations($data);
+
     $batch = [
       'operations' => $operations,
       'finished' => 'create_tax_terms_batch_finished',
@@ -217,7 +216,18 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    * {@inheritDoc}
    */
   public function showDataAsTree($excludedByTypeId = [], $organization = 0, $maxDepth = 0) {
-    return $this->taxonomyUtils->load('sote_section', $excludedByTypeId, $organization, $maxDepth);
+    $terms = $this->entityTypeManager->getStorage('taxonomy_term')->loadTree('sote_section', $organization, $maxDepth);
+
+    $tree = [];
+    foreach ($terms as $tree_object) {
+      $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tree_object->tid);
+      if (in_array($term->field_type_id, $excludedByTypeId)) {
+        continue;
+      }
+      $this->taxonomyUtils->buildTree($tree, $tree_object, 'sote_section');
+    }
+
+    return $tree;
   }
 
 }
