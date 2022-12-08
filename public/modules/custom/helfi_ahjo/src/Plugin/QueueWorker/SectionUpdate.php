@@ -3,7 +3,8 @@
 namespace Drupal\helfi_ahjo\Plugin\QueueWorker;
 
 use Drupal\Core\Queue\QueueWorkerBase;
-use Drupal\taxonomy\Entity\Term;
+use Drupal\helfi_ahjo\Services\AhjoService;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * A worker that updates metadata for every image.
@@ -17,26 +18,24 @@ use Drupal\taxonomy\Entity\Term;
 class SectionUpdate extends QueueWorkerBase {
 
   /**
+   * The entity type manager.
+   *
+   * @var \Drupal\helfi_ahjo\Services\AhjoService
+   */
+  protected $ahjoService;
+
+  /**
+   * {@inheritDoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, AhjoService $ahjoService) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->ahjoService = $ahjoService;
+  }
+
+  /**
    * {@inheritDoc}
    */
   public function processItem($data) {
-    $loadByExternalId = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
-      'vid' => 'sote_section',
-      'field_external_id' => $data['ID'],
-    ]);
-    foreach ($loadByExternalId as $term) {
-      $loadTerm = Term::load($term->id());
-
-      $loadTerm->set('name', $data['Name']);
-      if (isset($data['parentId'])) {
-        $loadTerm->set('parent', $data['parentId']);
-      }
-
-      $loadTerm->set('field_section_type', $data['Type']);
-      $loadTerm->set('field_section_type_id', $data['TypeId']);
-      $loadTerm->save();
-
-    }
+    $this->ahjoService->createTaxonomyBatch($data);
   }
-
 }

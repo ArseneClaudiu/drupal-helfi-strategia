@@ -7,8 +7,10 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleExtensionList;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\helfi_ahjo\AhjoServiceInterface;
 use Drupal\helfi_ahjo\Utils\TaxonomyUtils;
+use Drupal\taxonomy\Entity\Term;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -49,6 +51,13 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   protected $guzzleClient;
 
   /**
+   * Messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
    * AHJO Service constructor.
    *
    * @param \Drupal\Core\Extension\ModuleExtensionList $extension_list_module
@@ -59,17 +68,21 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    *   The entity type manager service.
    * @param \GuzzleHttp\ClientInterface $guzzleClient
    *   A fully configured Guzzle client to pass to the dam client.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   Messenger service.
    */
   public function __construct(
     ModuleExtensionList $extension_list_module,
     TaxonomyUtils $taxonomyUtils,
     EntityTypeManagerInterface $entity_type_manager,
-    ClientInterface $guzzleClient
+    ClientInterface $guzzleClient,
+    MessengerInterface $messenger
   ) {
     $this->moduleExtensionList = $extension_list_module;
     $this->taxonomyUtils = $taxonomyUtils;
     $this->entityTypeManager = $entity_type_manager;
     $this->guzzleClient = $guzzleClient;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -80,7 +93,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
       $container->get('extension.list.module'),
       $container->get('helfi_ahjo.taxonomy_utils'),
       $container->get('entity_type.manager'),
-      $container->get('http_client')
+      $container->get('http_client'),
+      $container->get('messenger')
     );
   }
 
@@ -129,7 +143,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   public function setAllBatchOperations($childData = [], &$operations = [], $parentId = 0) {
     foreach ($childData as $content) {
       $content['parentId'] = $parentId;
-      $operations[] = ['create_tax_terms_batch', [$content]];
+      $operations[] = [$this->createTaxonomyTermsBatch(), [$content]];
 
       if (isset($content['OrganizationLevelBelow'])) {
         $this->setAllBatchOperations($content['OrganizationLevelBelow'], $operations, $content['ID']);
@@ -158,7 +172,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
 
     $batch = [
       'operations' => $operations,
-      'finished' => 'create_tax_terms_batch_finished',
+      'finished' => $this->createTaxonomyTermsBatchFinished(),
       'title' => 'Performing an operation',
       'init_message' => 'Please wait',
       'progress_message' => 'Completed @current from @total',
@@ -230,4 +244,48 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     return $tree;
   }
 
+  public function createTaxonomyTermsBatch($data, &$context) {
+    $message = 'Creating taxonomy terms...';
+
+    $loadByExternalId = $this->entityTypeManager->getStorage('taxonomy_term')->loadByProperties([
+      'vid' => 'sote_section',
+      'field_external_id' => $data['ID'],
+    ]);
+
+    if (count($loadByExternalId) == 0) {
+      $term = Term::create([
+        'name' => $data['Name'],
+        'vid' => 'sote_section',
+        'field_external_id' => $data['ID'],
+        'field_external_parent_id' => $data['parentId'],
+        'field_section_type' => $data['Type'],
+        'field_type_id' => $data['TypeId'],
+      ]);
+      $term->save();
+    }
+    else {
+      $term = array_values($loadByExternalId);
+
+      $term[0]->set('field_external_id', $data['ID']);
+      $term[0]->set('field_external_parent_id', $data['parentId']);
+      $term[0]->set('field_section_type', $data['Type']);
+      $term[0]->set('field_type_id', $data['TypeId']);
+      $term[0]->save();
+    }
+
+    $context['message'] = $message;
+  }
+
+  public function createTaxonomyTermsBatchFinished($success, $results, $operations) {
+    if ($success) {
+      $message = t('Terms processed.');
+
+    }
+    else {
+      $message = t('Finished with an error.');
+    }
+    $this->syncTaxonomyTermsChilds();
+    $this->messenger->addStatus($message);
+
+  }
 }
