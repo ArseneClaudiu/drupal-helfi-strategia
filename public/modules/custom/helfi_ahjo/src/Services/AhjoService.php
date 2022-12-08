@@ -260,6 +260,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
         'field_external_parent_id' => $data['parentId'],
         'field_section_type' => $data['Type'],
         'field_type_id' => $data['TypeId'],
+        'parent' => $context['importedTids'][$data['ID']] ?? 0,
       ]);
       $term->save();
     }
@@ -270,8 +271,11 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
       $term[0]->set('field_external_parent_id', $data['parentId']);
       $term[0]->set('field_section_type', $data['Type']);
       $term[0]->set('field_type_id', $data['TypeId']);
+      $term[0]->set('parent', $context['importedTids'][$data['ID']] ?? 0);
       $term[0]->save();
     }
+
+    $context['importedTids'][$data['ID']] = $term->id();
 
     $context['message'] = $message;
   }
