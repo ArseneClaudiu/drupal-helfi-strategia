@@ -98,6 +98,8 @@ class AhjoConfigForm extends ConfigFormBase {
 
     // $response = \Drupal::httpClient()->request('GET', $url);
 
+    // TODO split the config settings into 3 details.
+    // TODO API settings detail
     $form['helfi_ahjo_base_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Ahjo Base URL'),
@@ -114,6 +116,7 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
+    // TODO Cron settings  detail
     $form['org_id'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Organisation ID (Start)'),
@@ -157,6 +160,7 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
+    // TODO Sync now detail
     $form['org_id'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Organisation ID (Start)'),
@@ -179,9 +183,10 @@ class AhjoConfigForm extends ConfigFormBase {
       '#value' => $this->t('Save Ahjo Configuration'),
       '#button_type' => 'primary',
     ];
+    // TODO this should be in Sync now detail
     $form['actions']['import_sync'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Import Data and Sync'),
+      '#value' => $this->t('Sync now'),
       '#button_type' => 'primary',
       '#submit' => ['::importSyncData'],
     ];
@@ -253,11 +258,17 @@ class AhjoConfigForm extends ConfigFormBase {
    * Import data and sync it.
    */
   public function importSyncData(array &$form, FormStateInterface $form_state) {
-    $this->ahjoService->createTaxonomyBatch(
-      $this->ahjoService->fetchDataFromRemote($form_state->getValue('org_id'), $form_state->getValue('max_depth'))
-    );
+    try {
+      $data = $this->ahjoService->fetchDataFromRemote($form_state->getValue('org_id'), $form_state->getValue('max_depth'));
+    }
+    catch (\Exception $e) {
+      $this->messenger()->addError($this->t('Unable to fetch data from remote'));
+      $form_state->setRebuild(TRUE);
+    }
 
-    $this->ahjoService->syncTaxonomyTermsChilds();
+    $this->ahjoService->createTaxonomyBatch($data);
+
+//    $this->ahjoService->syncTaxonomyTermsChilds();
 
     $this->messenger->addStatus('Sections imported and synchronized!');
   }
@@ -266,6 +277,7 @@ class AhjoConfigForm extends ConfigFormBase {
    * Delete all imported data from sote section taxonomy.
    */
   public function deleteAllData(array &$form, FormStateInterface $form_state) {
+    // TODO this should be also with batch.
     $terms = \Drupal::entityTypeManager()
       ->getStorage('taxonomy_term')
       ->loadByProperties(['vid' => 'sote_section']);

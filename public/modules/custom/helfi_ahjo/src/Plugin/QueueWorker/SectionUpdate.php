@@ -7,6 +7,7 @@ use Drupal\helfi_ahjo\Services\AhjoService;
 
 /**
  * A worker that updates metadata for every image.
+ * // TODO remove this after we confirm cron with batch works fine.
  *
  * @QueueWorker(
  *   id = "sote_section_update",

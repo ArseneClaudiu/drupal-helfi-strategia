@@ -108,7 +108,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * {@inheritDoc}
    */
-  public function fetchDataFromRemote($orgId = 00001, $maxDepth = 9999): string {
+  public function fetchDataFromRemote($orgId = 00001, $maxDepth = 9999): array {
     $config = self::getConfig();
     if (strlen($orgId) < 5) {
       $orgId = sprintf('%05d', $orgId);
@@ -118,17 +118,10 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
       $maxDepth = sprintf('%04d', $maxDepth);
     }
 
-    try {
-      $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
+    $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
 
-      $response = $this->guzzleClient->request('GET', $url);
-
-      return $response->getBody()->getContents();
-    }
-    catch (ClientException $e) {
-      throw new \Exception($e->getResponse()->getStatusCode());
-    }
-
+    $response = $this->guzzleClient->request('GET', $url);
+    return Json::decode($response->getBody()->getContents());
   }
 
   /**
@@ -139,13 +132,18 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    * Recursive set all information from ahjo api.
    *
    */
-  public static function setAllBatchOperations($childData = [], &$operations = [], $externalParentId = 0): void {
+  public function setAllBatchOperations($childData = [], &$operations = [], $externalParentId = 0): void {
     foreach ($childData as $content) {
       $content['externalParentId'] = $externalParentId;
-      $operations[] = ['\Drupal\helfi_ahjo\Services\AhjoService::syncTaxonomyTermsOperation', [$content]];
+      $operations[] = ['_helfi_ahjo_batch_dispatcher',
+        [
+          'helfi_ahjo.ahjo_service:syncTaxonomyTermsOperation',
+          $content,
+        ],
+      ];
 
       if (isset($content['OrganizationLevelBelow'])) {
-        self::setAllBatchOperations($content['OrganizationLevelBelow'], $operations, $content['ID']);
+        $this->setAllBatchOperations($content['OrganizationLevelBelow'], $operations, $content['ID']);
       }
     }
 
@@ -159,18 +157,14 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    *
    * @return void
    */
-  public static function createTaxonomyBatch($data) {
-    if (!is_array($data)) {
-      $data = Json::decode($data);
-    }
-
+  public function createTaxonomyBatch(array $data) {
     $operations = [];
 
-    self::setAllBatchOperations($data, $operations);
+    $this->setAllBatchOperations($data, $operations);
 
     $batch = [
       'operations' => $operations,
-      'finished' => '\Drupal\helfi_ahjo\Services\AhjoService::createTaxonomyTermsBatchFinished',
+      'finished' => [AhjoService::class, 'syncTermsBatchFinished'],
       'title' => 'Performing an operation',
       'init_message' => 'Please wait',
       'progress_message' => 'Completed @current from @total',
@@ -178,7 +172,6 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     ];
 
     batch_set($batch);
-
   }
 
   /**
@@ -197,31 +190,30 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
         $this->addToCron($section['OrganizationLevelBelow'], $queue, $section['ID']);
       }
     }
-    $this->syncTaxonomyTermsChilds();
+//    $this->syncTaxonomyTermsChilds();
   }
 
   /**
    * {@inheritDoc}
    */
   public function syncTaxonomyTermsChilds() {
-    $terms = $this->entityTypeManager
-      ->getStorage('taxonomy_term')
-      ->loadByProperties(['vid' => 'sote_section']);
-    foreach ($terms as $item) {
-      if (!isset($item->field_external_parent_id->value)
-        || $item->field_external_parent_id->value == NULL
-        || $item->field_external_parent_id->value == '0') {
-        continue;
-      }
-      $loadByExternalId = $this->entityTypeManager->getStorage('taxonomy_term')->loadByProperties([
-        'vid' => 'sote_section',
-        'field_external_id' => $item->field_external_parent_id->value,
-      ]);
-
-      $item->set('parent', reset($loadByExternalId)->tid->value);
-      $item->save();
-
-    }
+//    $terms = $this->entityTypeManager
+//      ->getStorage('taxonomy_term')
+//      ->loadByProperties(['vid' => 'sote_section']);
+//    foreach ($terms as $item) {
+//      if (!isset($item->field_external_parent_id->value)
+//        || $item->field_external_parent_id->value == NULL
+//        || $item->field_external_parent_id->value == '0') {
+//        continue;
+//      }
+//      $loadByExternalId = $this->entityTypeManager->getStorage('taxonomy_term')->loadByProperties([
+//        'vid' => 'sote_section',
+//        'field_external_id' => $item->field_external_parent_id->value,
+//      ]);
+//
+//      $item->set('parent', reset($loadByExternalId)->tid->value);
+//      $item->save();
+//    }
   }
 
   /**
@@ -233,7 +225,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     $tree = [];
     foreach ($terms as $tree_object) {
       $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($tree_object->tid);
-      if (in_array($term->field_type_id, $excludedByTypeId)) {
+      $typeId = $term->get('field_type_id')->value ?? NULL;
+      if ($typeId && in_array($typeId, $excludedByTypeId)) {
         continue;
       }
       $this->taxonomyUtils->buildTree($tree, $tree_object, 'sote_section');
@@ -242,9 +235,9 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     return $tree;
   }
 
-  public static function syncTaxonomyTermsOperation($data, &$context) {
-    if (!isset($context['sandbox']['importedTids'])) {
-      $context['sandbox']['importedTids'] = [];
+  public function syncTaxonomyTermsOperation($data, &$context) {
+    if (!isset($context['results'][$data['ID']])) {
+      $context['results'][$data['ID']] = NULL;
     }
     $message = 'Creating taxonomy terms...';
 
@@ -268,24 +261,26 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     $term->set('field_external_parent_id', $data['parentId']);
     $term->set('field_section_type', $data['Type']);
     $term->set('field_type_id', $data['TypeId']);
-    $term->set('parent', $context['sandbox']['importedTids'][$data['externalParentId']] ?? NULL);
+    $term->set('parent', $context['results'][$data['externalParentId']] ?? NULL);
     $term->save();
 
-    $context['sandbox']['importedTids'][$data['ID']] = $term->id();
+    $context['results'][$data['ID']] = $term->id();
 
     $context['message'] = $message;
   }
 
-  public static function createTaxonomyTermsBatchFinished($success, $results, $operations) {
+  public static function syncTermsBatchFinished($success, $results, $operations) {
+    \Drupal::service('helfi_ahjo.ahjo_service')->doSyncTermsBatchFinished($success, $results, $operations);
+  }
+
+  public function doSyncTermsBatchFinished($success, $results, $operations) {
     if ($success) {
       $message = t('Terms processed.');
-
     }
     else {
       $message = t('Finished with an error.');
     }
-//    $this->syncTaxonomyTermsChilds();
-    \Drupal::messenger()->addStatus($message);
-
+    //    $this->syncTaxonomyTermsChilds();
+    $this->messenger->addStatus($message);
   }
 }

@@ -42,27 +42,50 @@ function helfi_ahjo_cron() {
     return;
   }
 
-  $count = \Drupal::queue('sote_section_update')->numberOfItems();
+//  $count = \Drupal::queue('sote_section_update')->numberOfItems();
+//
+//  if ($count > 0) {
+//    $logger = \Drupal::service('logger.factory')->get('helfi_ahjo');
+//    $logger->info('Cron execution has been cancelled because the queue @queue_name is not empty (@count items)..', [
+//      '@count' => $count,
+//      '@queue_name' => 'Acquia DAM Asset Refresh',
+//    ]);
+//    return;
+//  }
 
-  if ($count > 0) {
-    $logger = \Drupal::service('logger.factory')->get('helfi_ahjo');
-    $logger->info('Cron execution has been cancelled because the queue @queue_name is not empty (@count items)..', [
-      '@count' => $count,
-      '@queue_name' => 'Acquia DAM Asset Refresh',
-    ]);
+  // TODO test this cron batch runnig with drush or via cron url or via cron run button.
+  try {
+    // TODO get org id and max depth from config.
+    $data = \Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote();
+    \Drupal::service('helfi_ahjo.ahjo_service')->createTaxonomyBatch($data);
+  }
+  catch (\Exception $e) {
+    // TODO log the error.
     return;
   }
 
-  $jsonFile = Json::decode(\Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote());
-  $queue = \Drupal::queue('sote_section_update');
-  \Drupal::service('helfi_ahjo.ahjo_service')->addToCron($jsonFile, $queue);
+  // TODO remove these after confirmation of above batch works.
+//  $queue = \Drupal::queue('sote_section_update');
+//  \Drupal::service('helfi_ahjo.ahjo_service')->addToCron($data, $queue);
 
-  $count = \Drupal::queue('sote_section_update')->numberOfItems();
+//  $count = \Drupal::queue('sote_section_update')->numberOfItems();
 
-  /** @var \Drupal\Core\Logger\LoggerChannelInterface $logger */
-  $logger = \Drupal::service('logger.factory')->get('helfi_ahjo');
-  $logger->info('Total items in the queue: @count.', ['@count' => $count]);
-  \Drupal::service('helfi_ahjo.ahjo_service')->syncTaxonomyTermsTree();
+//  /** @var \Drupal\Core\Logger\LoggerChannelInterface $logger */
+//  $logger = \Drupal::service('logger.factory')->get('helfi_ahjo');
+//  $logger->info('Total items in the queue: @count.', ['@count' => $count]);
+//  \Drupal::service('helfi_ahjo.ahjo_service')->syncTaxonomyTermsTree();
   \Drupal::state()->set('helfi_ahjo.last_run', $request_time);
+}
+
+/**
+ * Batch callback to dispatch operations to service.
+ */
+function _helfi_ahjo_batch_dispatcher() {
+  $args = func_get_args();
+  list($service, $method) = explode(':', array_shift($args));
+  // The second argument (context) is passed by reference.
+  $values = $args[1];
+  $args[1] = &$values;
+  call_user_func_array([\Drupal::service($service), $method], $args);
 }
 
