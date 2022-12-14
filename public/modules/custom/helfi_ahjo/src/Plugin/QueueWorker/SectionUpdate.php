@@ -4,7 +4,6 @@ namespace Drupal\helfi_ahjo\Plugin\QueueWorker;
 
 use Drupal\Core\Queue\QueueWorkerBase;
 use Drupal\helfi_ahjo\Services\AhjoService;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * A worker that updates metadata for every image.

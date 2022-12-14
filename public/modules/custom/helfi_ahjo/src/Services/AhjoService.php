@@ -134,23 +134,21 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * @param array $childData
    * @param array $operations
-   * @param int $parentId
+   * @param int $externalParentId
    *
    * Recursive set all information from ahjo api.
    *
-   * @return array|mixed
    */
-  public function setAllBatchOperations($childData = [], &$operations = [], $parentId = 0) {
+  public static function setAllBatchOperations($childData = [], &$operations = [], $externalParentId = 0): void {
     foreach ($childData as $content) {
-      $content['parentId'] = $parentId;
-      $operations[] = [$this->createTaxonomyTermsBatch(), [$content]];
+      $content['externalParentId'] = $externalParentId;
+      $operations[] = ['\Drupal\helfi_ahjo\Services\AhjoService::syncTaxonomyTermsOperation', [$content]];
 
       if (isset($content['OrganizationLevelBelow'])) {
-        $this->setAllBatchOperations($content['OrganizationLevelBelow'], $operations, $content['ID']);
+        self::setAllBatchOperations($content['OrganizationLevelBelow'], $operations, $content['ID']);
       }
     }
 
-    return $operations;
   }
 
   /**
@@ -161,18 +159,18 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
    *
    * @return void
    */
-  public function createTaxonomyBatch($data) {
+  public static function createTaxonomyBatch($data) {
     if (!is_array($data)) {
       $data = Json::decode($data);
     }
 
     $operations = [];
 
-    $operations[] = $this->setAllBatchOperations($data);
+    self::setAllBatchOperations($data, $operations);
 
     $batch = [
       'operations' => $operations,
-      'finished' => $this->createTaxonomyTermsBatchFinished(),
+      'finished' => '\Drupal\helfi_ahjo\Services\AhjoService::createTaxonomyTermsBatchFinished',
       'title' => 'Performing an operation',
       'init_message' => 'Please wait',
       'progress_message' => 'Completed @current from @total',
@@ -192,7 +190,7 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     }
 
     foreach ($data as $section) {
-      $section['parentId'] = $parentId ?? 0;
+      $section['externalParentId'] = $parentId ?? 0;
       $queue->createItem($section);
 
       if (isset($section['OrganizationLevelBelow'])) {
@@ -244,10 +242,13 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     return $tree;
   }
 
-  public function createTaxonomyTermsBatch($data, &$context) {
+  public static function syncTaxonomyTermsOperation($data, &$context) {
+    if (!isset($context['sandbox']['importedTids'])) {
+      $context['sandbox']['importedTids'] = [];
+    }
     $message = 'Creating taxonomy terms...';
 
-    $loadByExternalId = $this->entityTypeManager->getStorage('taxonomy_term')->loadByProperties([
+    $loadByExternalId = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties([
       'vid' => 'sote_section',
       'field_external_id' => $data['ID'],
     ]);
@@ -256,31 +257,26 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
       $term = Term::create([
         'name' => $data['Name'],
         'vid' => 'sote_section',
-        'field_external_id' => $data['ID'],
-        'field_external_parent_id' => $data['parentId'],
-        'field_section_type' => $data['Type'],
-        'field_type_id' => $data['TypeId'],
-        'parent' => $context['importedTids'][$data['ID']] ?? 0,
       ]);
-      $term->save();
+
     }
     else {
-      $term = array_values($loadByExternalId);
-
-      $term[0]->set('field_external_id', $data['ID']);
-      $term[0]->set('field_external_parent_id', $data['parentId']);
-      $term[0]->set('field_section_type', $data['Type']);
-      $term[0]->set('field_type_id', $data['TypeId']);
-      $term[0]->set('parent', $context['importedTids'][$data['ID']] ?? 0);
-      $term[0]->save();
+      $term = current($loadByExternalId);
     }
 
-    $context['importedTids'][$data['ID']] = $term->id();
+    $term->set('field_external_id', $data['ID']);
+    $term->set('field_external_parent_id', $data['parentId']);
+    $term->set('field_section_type', $data['Type']);
+    $term->set('field_type_id', $data['TypeId']);
+    $term->set('parent', $context['sandbox']['importedTids'][$data['externalParentId']] ?? NULL);
+    $term->save();
+
+    $context['sandbox']['importedTids'][$data['ID']] = $term->id();
 
     $context['message'] = $message;
   }
 
-  public function createTaxonomyTermsBatchFinished($success, $results, $operations) {
+  public static function createTaxonomyTermsBatchFinished($success, $results, $operations) {
     if ($success) {
       $message = t('Terms processed.');
 
@@ -288,8 +284,8 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     else {
       $message = t('Finished with an error.');
     }
-    $this->syncTaxonomyTermsChilds();
-    $this->messenger->addStatus($message);
+//    $this->syncTaxonomyTermsChilds();
+    \Drupal::messenger()->addStatus($message);
 
   }
 }
