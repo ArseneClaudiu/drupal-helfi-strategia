@@ -267,9 +267,6 @@ class AhjoConfigForm extends ConfigFormBase {
     }
 
     $this->ahjoService->createTaxonomyBatch($data);
-
-//    $this->ahjoService->syncTaxonomyTermsChilds();
-
     $this->messenger->addStatus('Sections imported and synchronized!');
   }
 

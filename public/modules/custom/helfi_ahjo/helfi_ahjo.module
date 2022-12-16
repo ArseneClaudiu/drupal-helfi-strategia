@@ -1,6 +1,4 @@
 <?php
-use Drupal\Component\Serialization\Json;
-use Drupal\taxonomy\Entity\Term;
 
 /**
  * Implements hook_theme().
@@ -42,38 +40,15 @@ function helfi_ahjo_cron() {
     return;
   }
 
-//  $count = \Drupal::queue('sote_section_update')->numberOfItems();
-//
-//  if ($count > 0) {
-//    $logger = \Drupal::service('logger.factory')->get('helfi_ahjo');
-//    $logger->info('Cron execution has been cancelled because the queue @queue_name is not empty (@count items)..', [
-//      '@count' => $count,
-//      '@queue_name' => 'Acquia DAM Asset Refresh',
-//    ]);
-//    return;
-//  }
-
-  // TODO test this cron batch runnig with drush or via cron url or via cron run button.
   try {
-    // TODO get org id and max depth from config.
-    $data = \Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote();
+    $data = \Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote($config->get('org_id'), $config->get('max_depth'));
     \Drupal::service('helfi_ahjo.ahjo_service')->createTaxonomyBatch($data);
   }
   catch (\Exception $e) {
-    // TODO log the error.
+    \Drupal::logger('helfi_ahjo')->error($e);
     return;
   }
 
-  // TODO remove these after confirmation of above batch works.
-//  $queue = \Drupal::queue('sote_section_update');
-//  \Drupal::service('helfi_ahjo.ahjo_service')->addToCron($data, $queue);
-
-//  $count = \Drupal::queue('sote_section_update')->numberOfItems();
-
-//  /** @var \Drupal\Core\Logger\LoggerChannelInterface $logger */
-//  $logger = \Drupal::service('logger.factory')->get('helfi_ahjo');
-//  $logger->info('Total items in the queue: @count.', ['@count' => $count]);
-//  \Drupal::service('helfi_ahjo.ahjo_service')->syncTaxonomyTermsTree();
   \Drupal::state()->set('helfi_ahjo.last_run', $request_time);
 }
 

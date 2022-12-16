@@ -3,11 +3,9 @@
 namespace Drupal\helfi_ahjo\Plugin\QueueWorker;
 
 use Drupal\Core\Queue\QueueWorkerBase;
-use Drupal\helfi_ahjo\Services\AhjoService;
 
 /**
  * A worker that updates metadata for every image.
- * // TODO remove this after we confirm cron with batch works fine.
  *
  * @QueueWorker(
  *   id = "sote_section_update",
@@ -18,24 +16,17 @@ use Drupal\helfi_ahjo\Services\AhjoService;
 class SectionUpdate extends QueueWorkerBase {
 
   /**
-   * The entity type manager.
-   *
-   * @var \Drupal\helfi_ahjo\Services\AhjoService
-   */
-  protected $ahjoService;
-
-  /**
    * {@inheritDoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, AhjoService $ahjoService) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->ahjoService = $ahjoService;
   }
+
 
   /**
    * {@inheritDoc}
    */
   public function processItem($data) {
-    $this->ahjoService->createTaxonomyBatch($data);
+    \Drupal::service('helfi_ahjo.ahjo_service')->createTaxonomyBatch($data);
   }
 }

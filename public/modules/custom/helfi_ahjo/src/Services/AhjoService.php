@@ -12,7 +12,6 @@ use Drupal\helfi_ahjo\AhjoServiceInterface;
 use Drupal\helfi_ahjo\Utils\TaxonomyUtils;
 use Drupal\taxonomy\Entity\Term;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -190,7 +189,6 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
         $this->addToCron($section['OrganizationLevelBelow'], $queue, $section['ID']);
       }
     }
-//    $this->syncTaxonomyTermsChilds();
   }
 
   /**
