@@ -264,9 +264,22 @@ class AhjoConfigForm extends ConfigFormBase {
     $terms = \Drupal::entityTypeManager()
       ->getStorage('taxonomy_term')
       ->loadByProperties(['vid' => 'sote_section']);
+    $operations = [];
     foreach ($terms as $item) {
-      $item->delete();
+      $operations[] = ['\Drupal\helfi_ahjo\Services\AhjoService::deleteTaxonomyTermsOperation', [$item]];
     }
+
+    $batch = [
+      'operations' => $operations,
+      'finished' => [AhjoService::class, 'syncTermsBatchFinished'],
+      'title' => 'Performing an operation',
+      'init_message' => 'Please wait',
+      'progress_message' => 'Completed @current from @total',
+      'error_message' => 'An error occurred',
+    ];
+
+    batch_set($batch);
   }
+
 
 }

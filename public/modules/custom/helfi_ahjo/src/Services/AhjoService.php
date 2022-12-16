@@ -267,6 +267,14 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     $context['message'] = $message;
   }
 
+  public static function deleteTaxonomyTermsOperation($item, &$context) {
+    $message = 'Deleting taxonomy terms...';
+
+    $item->delete();
+
+    $context['message'] = $message;
+  }
+
   public static function syncTermsBatchFinished($success, $results, $operations) {
     \Drupal::service('helfi_ahjo.ahjo_service')->doSyncTermsBatchFinished($success, $results, $operations);
   }
