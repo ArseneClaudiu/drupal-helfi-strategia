@@ -94,13 +94,12 @@ class AhjoConfigForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state): array {
     $config = $this->config('helfi_ahjo.config');
 
-    // $url = sprintf("%s/fi/ahjo-proxy/org-chart/00001/9999?api-key=%s", $config->get('base_url'), $config->get('api_key'));
-
-    // $response = \Drupal::httpClient()->request('GET', $url);
-
-    // TODO split the config settings into 3 details.
-    // TODO API settings detail
-    $form['helfi_ahjo_base_url'] = [
+    $form['api_config'] = [
+      '#type' => 'fieldset',
+      '#title' => $this
+        ->t('API Configs'),
+    ];
+    $form['api_config']['helfi_ahjo_base_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Ahjo Base URL'),
       '#default_value' => $config->get('base_url'),
@@ -108,7 +107,7 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
-    $form['helfi_ahjo_api_key'] = [
+    $form['api_config']['helfi_ahjo_api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Ahjo API Key'),
       '#default_value' => $config->get('api_key'),
@@ -116,32 +115,12 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
-    // TODO Cron settings  detail
-    $form['org_id'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Organisation ID (Start)'),
-      '#default_value' => 00001,
-      '#description' => $this->t('example: 00001'),
-      '#required' => TRUE,
+    $form['cron_config'] = [
+      '#type' => 'fieldset',
+      '#title' => $this
+        ->t('Cron Configs'),
     ];
-
-    $form['max_depth'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Max Depth'),
-      '#default_value' => 9999,
-      '#description' => $this->t('example: 9999'),
-      '#required' => TRUE,
-    ];
-
-    $form['organigram_max_depth'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Organigram Max Depth'),
-      '#default_value' => $config->get('organigram_max_depth'),
-      '#description' => $this->t('Default: 3'),
-      '#required' => TRUE,
-    ];
-
-    $form['sync_interval'] = [
+    $form['cron_config']['sync_interval'] = [
       '#type' => 'select',
       '#title' => $this->t('Ahjo Sections Update Interval'),
       '#options' => [
@@ -160,8 +139,7 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
-    // TODO Sync now detail
-    $form['org_id'] = [
+    $form['cron_config']['org_id'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Organisation ID (Start)'),
       '#default_value' => $config->get('org_id') ?? 00001,
@@ -169,7 +147,7 @@ class AhjoConfigForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
-    $form['max_depth'] = [
+    $form['cron_config']['max_depth'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Max Depth'),
       '#default_value' => $config->get('max_depth') ?? 9999,
@@ -183,8 +161,8 @@ class AhjoConfigForm extends ConfigFormBase {
       '#value' => $this->t('Save Ahjo Configuration'),
       '#button_type' => 'primary',
     ];
-    // TODO this should be in Sync now detail
-    $form['actions']['import_sync'] = [
+
+    $form['cron_config']['actions']['import_sync'] = [
       '#type' => 'submit',
       '#value' => $this->t('Sync now'),
       '#button_type' => 'primary',
@@ -227,10 +205,18 @@ class AhjoConfigForm extends ConfigFormBase {
       );
     }
 
-    $organigram_max_depth = Xss::filter($form_state->getValue('organigram_max_depth'));
-    if (!$organigram_max_depth || is_int($organigram_max_depth)) {
+    $org_id = Xss::filter($form_state->getValue('org_id'));
+    if (!$org_id || is_int($org_id)) {
       $form_state->setErrorByName(
-        'organigram_max_depth',
+        'org_id',
+        $this->t('Provided max depth is not valid.')
+      );
+    }
+
+    $max_depth = Xss::filter($form_state->getValue('max_depth'));
+    if (!$max_depth || is_int($max_depth)) {
+      $form_state->setErrorByName(
+        'max_depth',
         $this->t('Provided max depth is not valid.')
       );
     }
