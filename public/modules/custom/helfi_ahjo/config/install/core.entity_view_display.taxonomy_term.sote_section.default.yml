@@ -1,4 +1,3 @@
-uuid: edd29f1b-9306-41ce-8fc0-eca9906bbad9
 langcode: en
 status: true
 dependencies:
@@ -6,7 +5,7 @@ dependencies:
     - field.field.taxonomy_term.sote_section.field_external_id
     - field.field.taxonomy_term.sote_section.field_external_parent_id
     - field.field.taxonomy_term.sote_section.field_section_type
-    - field.field.taxonomy_term.sote_section.field_typeid
+    - field.field.taxonomy_term.sote_section.field_type_id
     - taxonomy.vocabulary.sote_section
   module:
     - text
@@ -48,7 +47,7 @@ content:
     third_party_settings: {  }
     weight: 4
     region: content
-  field_typeid:
+  field_type_id:
     type: number_integer
     label: above
     settings:

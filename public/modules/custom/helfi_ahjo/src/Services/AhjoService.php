@@ -117,19 +117,14 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
       $maxDepth = sprintf('%04d', $maxDepth);
     }
 
-    $url = sprintf("%s/fi/ahjo-proxy/org-chart/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
+    $url = sprintf("%s/$orgId/$maxDepth?api-key=%s", $config->get('base_url'), $config->get('api_key'));
 
     $response = $this->guzzleClient->request('GET', $url);
     return Json::decode($response->getBody()->getContents());
   }
 
   /**
-   * @param array $childData
-   * @param array $operations
-   * @param int $externalParentId
-   *
-   * Recursive set all information from ahjo api.
-   *
+   * {@inheritDoc}
    */
   public function setAllBatchOperations($childData = [], &$operations = [], $externalParentId = 0): void {
     foreach ($childData as $content) {
@@ -149,14 +144,9 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   }
 
   /**
-   * Create batch operations for taxonomy sote_section.
-   *
-   * @param array $data
-   *   Data for batch.
-   *
-   * @return void
+   * {@inheritDoc}
    */
-  public function createTaxonomyBatch(array $data) {
+  public function createTaxonomyBatch(array $data): void {
     $operations = [];
 
     $this->setAllBatchOperations($data, $operations);
@@ -194,29 +184,6 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
   /**
    * {@inheritDoc}
    */
-  public function syncTaxonomyTermsChilds() {
-//    $terms = $this->entityTypeManager
-//      ->getStorage('taxonomy_term')
-//      ->loadByProperties(['vid' => 'sote_section']);
-//    foreach ($terms as $item) {
-//      if (!isset($item->field_external_parent_id->value)
-//        || $item->field_external_parent_id->value == NULL
-//        || $item->field_external_parent_id->value == '0') {
-//        continue;
-//      }
-//      $loadByExternalId = $this->entityTypeManager->getStorage('taxonomy_term')->loadByProperties([
-//        'vid' => 'sote_section',
-//        'field_external_id' => $item->field_external_parent_id->value,
-//      ]);
-//
-//      $item->set('parent', reset($loadByExternalId)->tid->value);
-//      $item->save();
-//    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
   public function showDataAsTree($excludedByTypeId = [], $organization = 0, $maxDepth = 0) {
     $terms = $this->entityTypeManager->getStorage('taxonomy_term')->loadTree('sote_section', $organization, $maxDepth);
 
@@ -233,7 +200,15 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     return $tree;
   }
 
-  public function syncTaxonomyTermsOperation($data, &$context) {
+  /**
+   * Create taxonomy terms operation.
+   *
+   * @param array $data
+   *   Data param.
+   * @param array $context
+   *   Context param.
+   */
+  public function syncTaxonomyTermsOperation(array $data, array &$context) {
     if (!isset($context['results'][$data['ID']])) {
       $context['results'][$data['ID']] = NULL;
     }
@@ -267,6 +242,14 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     $context['message'] = $message;
   }
 
+  /**
+   * Delete term function.
+   *
+   * @param $item
+   *   Term item.
+   * @param $context
+   *   Context param.
+   */
   public static function deleteTaxonomyTermsOperation($item, &$context) {
     $message = 'Deleting taxonomy terms...';
 
@@ -275,18 +258,38 @@ class AhjoService implements ContainerInjectionInterface, AhjoServiceInterface {
     $context['message'] = $message;
   }
 
-  public static function syncTermsBatchFinished($success, $results, $operations) {
+  /**
+   * Call batch finished function for batch operation.
+   *
+   * @param string $success
+   *   Success message param.
+   * @param string $results
+   *   Result param.
+   * @param array $operations
+   *   Operations param.
+   */
+  public static function syncTermsBatchFinished(string $success, string $results, array $operations) {
     \Drupal::service('helfi_ahjo.ahjo_service')->doSyncTermsBatchFinished($success, $results, $operations);
   }
 
-  public function doSyncTermsBatchFinished($success, $results, $operations) {
+  /**
+   * Batch operation finished function.
+   *
+   * @param string $success
+   *   Success message param.
+   * @param string $results
+   *   Results param.
+   * @param array $operations
+   *   Operations param.
+   */
+  public function doSyncTermsBatchFinished(string $success, string $results, array $operations) {
     if ($success) {
       $message = t('Terms processed.');
     }
     else {
       $message = t('Finished with an error.');
     }
-    //    $this->syncTaxonomyTermsChilds();
     $this->messenger->addStatus($message);
   }
+
 }

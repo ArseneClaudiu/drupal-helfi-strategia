@@ -3,18 +3,18 @@
     attach: function (context, settings) {
       once('buildTree', 'html', context).forEach( function (element) {
         var editForm = function () {
-          return false;
+          return FALSE;
         }
         editForm.prototype.init = function (obj) {
-          return false
+          return FALSE;
         }
 
         editForm.prototype.show = function (node) {
-          return false;
+          return FALSE;
         }
 
         editForm.prototype.hide = function (showldUpdateTheNode) {
-          return false
+          return FALSE;
         }
         OrgChart.templates.ahjo = Object.assign({}, OrgChart.templates.ana);
         OrgChart.templates.ahjo.field_0 = '<text data-width="230" data-text-overflow="multiline" style="font-size: 16px;" fill="#ffffff" x="125" y="30" text-anchor="middle">{val}</text>';
@@ -23,7 +23,7 @@
           layout: OrgChart.mixed,
           template: "ahjo",
           editUI: new editForm(),
-          enableDragDrop: false,
+          enableDragDrop: FALSE,
           menu: {
             pdfPreview: {
               text: "PDF Preview",

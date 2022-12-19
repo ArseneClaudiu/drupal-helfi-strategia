@@ -2,7 +2,6 @@
 
 namespace Drupal\helfi_ahjo\Form;
 
-use Drupal\Component\Utility\Xss;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -188,8 +187,7 @@ class AhjoConfigForm extends ConfigFormBase {
    *   Form state instance.
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
-    $base_url = Xss::filter($form_state->getValue('helfi_ahjo_base_url'));
-    if (!$base_url) {
+    if (!$form_state->getValue('helfi_ahjo_base_url')) {
       $form_state->setErrorByName(
         'helfi_ahjo_base_url',
         $this->t('Provided base url is not valid.')
@@ -197,15 +195,14 @@ class AhjoConfigForm extends ConfigFormBase {
       return;
     }
 
-    $api_key = Xss::filter($form_state->getValue('helfi_ahjo_api_key'));
-    if (!$api_key) {
+    if (!$form_state->getValue('helfi_ahjo_api_key')) {
       $form_state->setErrorByName(
         'helfi_ahjo_api_key',
         $this->t('Provided api key is not valid.')
       );
     }
 
-    $org_id = Xss::filter($form_state->getValue('org_id'));
+    $org_id = $form_state->getValue('org_id');
     if (!$org_id || is_int($org_id)) {
       $form_state->setErrorByName(
         'org_id',
@@ -213,7 +210,7 @@ class AhjoConfigForm extends ConfigFormBase {
       );
     }
 
-    $max_depth = Xss::filter($form_state->getValue('max_depth'));
+    $max_depth = $form_state->getValue('max_depth');
     if (!$max_depth || is_int($max_depth)) {
       $form_state->setErrorByName(
         'max_depth',
@@ -260,13 +257,14 @@ class AhjoConfigForm extends ConfigFormBase {
    * Delete all imported data from sote section taxonomy.
    */
   public function deleteAllData(array &$form, FormStateInterface $form_state) {
-    // TODO this should be also with batch.
     $terms = \Drupal::entityTypeManager()
       ->getStorage('taxonomy_term')
       ->loadByProperties(['vid' => 'sote_section']);
     $operations = [];
     foreach ($terms as $item) {
-      $operations[] = ['\Drupal\helfi_ahjo\Services\AhjoService::deleteTaxonomyTermsOperation', [$item]];
+      $operations[] = [
+        '\Drupal\helfi_ahjo\Services\AhjoService::deleteTaxonomyTermsOperation', [$item],
+      ];
     }
 
     $batch = [
@@ -280,6 +278,5 @@ class AhjoConfigForm extends ConfigFormBase {
 
     batch_set($batch);
   }
-
 
 }
