@@ -1,0 +1,5 @@
+helfi_ahjo.config:
+  route_name : helfi_ahjo.config
+  title: Ahjo Configurations
+  base_route: helfi_ahjo.config
+  weight: 0

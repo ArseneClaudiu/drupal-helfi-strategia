@@ -1,0 +1,7 @@
+helfi_ahjo.config:
+  path: '/admin/config/ahjo'
+  defaults:
+    _form: '\Drupal\helfi_ahjo\Form\AhjoConfigForm'
+    _title: 'Helfi Ahjo Config'
+  requirements:
+    _permission: 'administer site configuration'

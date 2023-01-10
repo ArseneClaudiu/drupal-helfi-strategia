@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function helfi_ahjo_theme($existing, $type, $theme, $path) {
+  return [
+    'hierarchical_taxonomy_tree' => [
+      'builds' => [
+        'menu_tree' => [],
+        'route_tid' => NULL,
+        'vocabulary' => NULL,
+        'current_depth' => 0,
+        'max_depth' => 0,
+        'collapsible' => NULL,
+      ],
+    ],
+    'organigram_container' => [
+      'builds' => [
+        'menu_tree' => [],
+      ],
+    ],
+  ];
+
+}
+
+/**
+ * Implements hook_cron().
+ */
+function helfi_ahjo_cron() {
+  $config = \Drupal::configFactory()->get('helfi_ahjo.config');
+  /** @var int $last_run */
+  $last_run = \Drupal::state()->get('helfi_ahjo.last_run', 0);
+  /** @var int $request_time */
+  $request_time = \Drupal::time()->getRequestTime();
+  $interval = $config->get('sync_interval') ?? 3600;
+
+  // Check if we need to execute.
+  if ($interval !== -1 && $last_run + $interval >= $request_time) {
+    return;
+  }
+
+  try {
+    $data = \Drupal::service('helfi_ahjo.ahjo_service')->fetchDataFromRemote($config->get('org_id'), $config->get('max_depth'));
+    \Drupal::service('helfi_ahjo.ahjo_service')->createTaxonomyBatch($data);
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('helfi_ahjo')->error($e);
+    return;
+  }
+
+  \Drupal::state()->set('helfi_ahjo.last_run', $request_time);
+}
+
+/**
+ * Batch callback to dispatch operations to service.
+ */
+function _helfi_ahjo_batch_dispatcher() {
+  $args = func_get_args();
+  list($service, $method) = explode(':', array_shift($args));
+  // The second argument (context) is passed by reference.
+  $values = $args[1];
+  $args[1] = &$values;
+  call_user_func_array([\Drupal::service($service), $method], $args);
+}
+

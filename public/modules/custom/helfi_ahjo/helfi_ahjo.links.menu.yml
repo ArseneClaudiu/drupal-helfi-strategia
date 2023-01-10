@@ -1,0 +1,6 @@
+helfi_ahjo.settings:
+  title: 'Helfi Ahjo Settings'
+  description: 'Configure Ahjo API.'
+  route_name: helfi_ahjo.config
+  menu_name: admin
+  parent: system.admin_config_services
